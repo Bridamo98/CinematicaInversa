@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Cinemática inversa</title>
+		<style>
+			body { margin: 0; }
+			canvas { display: block; }
+		</style>
+	</head>
+	<body>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+		<script>
+			// Our Javascript will go here.
+			//We need: scene, camera and render
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+            //containers
+			var container1 = new THREE.Object3D();
+            var container2 = new THREE.Object3D();
+
+            //Variables
+            var l1 = 20.0;
+            var l2 = 20.0;
+            var x = 20.0;
+            var y = 20.0;
+            var center = (l1+l2)/2;
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			//The cube
+            var geometry = new THREE.BoxGeometry(1, 1, 1);
+			var geometry1 = new THREE.BoxGeometry(1, l1, 1);
+            var geometry2 = new THREE.BoxGeometry(1, l2, 1);
+            var geometryPoint = new THREE.BoxGeometry(0.1,0.1,0.1);
+			var material = new THREE.MeshBasicMaterial( { color: 0x00ff00} );//green
+			var material1 = new THREE.MeshBasicMaterial( { color: 0x0000ff} );//blue
+            var material2 = new THREE.MeshBasicMaterial( { color: 0xffff00} );//yellow
+            var cube = new THREE.Mesh(geometry, material);
+			var cube1 = new THREE.Mesh(geometry1, material1);
+			var cube2 = new THREE.Mesh(geometry2, material2);
+
+			//Line
+			var material3 = new THREE.LineBasicMaterial( { color: 0xff0000 } );
+			//Line's geometry
+			var points = [];
+			points.push(new THREE.Vector3(0, 100, 0));
+			points.push(new THREE.Vector3(0, 0, 0));
+			points.push(new THREE.Vector3(100, 0, 0));
+			points.push(new THREE.Vector3(0, 0, 0));
+			points.push(new THREE.Vector3(0, 0, -100));
+
+			var geometry = new THREE.BufferGeometry().setFromPoints(points);
+			var line = new THREE.Line(geometry, material3);
+
+            //scene
+            camera.position.set(40, 0, 20);
+            //camera.position.set(40, 0, 0);
+			camera.lookAt(20, 20, 0);
+
+            cube.position.set(x, y, 0);
+            cube1.position.set(0, l1/2, 0);
+            container1.add(cube1);
+            container2.position.set(cube1.position.x, cube1.position.y+l1/2, cube1.position.z)
+            cube2.position.set(cube1.position.x, cube1.position.y, cube1.position.z)
+            container2.add(cube2);
+            container1.add(container2);
+
+            scene.add(line);
+            scene.add(cube);
+            scene.add(container1);
+
+            var t = 0.0;
+            var t2 = 0.0;
+
+			//To see, we need render. Render or animate loop:
+			function animate(){
+				requestAnimationFrame(animate);
+				//movement
+				reverse(l1, l2, cube.position.x, cube.position.y);
+                cube.position.x = (l1/2-t2)*Math.cos(t) + center;
+                cube.position.y = (l2/2-t2)*Math.sin(t) + center;
+                cube.position.z = t*0.1;
+
+                var cubeA = new THREE.Mesh( geometryPoint, material );
+                cubeA.position.x=cube.position.x;
+                cubeA.position.y=cube.position.y;
+                cubeA.position.z=cube.position.z;
+                scene.add( cubeA );
+
+                if(t < 50){
+                    t += 0.05;
+                    t2 += 0.01;
+                }
+
+                console.log("x ",cube.position.x);
+                console.log("y ",cube.position.y);
+
+				renderer.render(scene, camera);
+			}
+
+            function reverse(l1, l2, x, y){
+                var q2 = Math.PI - Math.acos( (l1*l1+l2*l2-x*x-y*y)/(2*l1*l2) );
+                var q1 = Math.atan(y/x) - Math.atan( l2*Math.sin(q2)/(l1+l2*Math.cos(q2)) );
+
+                container2.rotation.z = q2;
+                if(x >= 0){
+                    container1.rotation.z = q1 - Math.PI/2;
+                }
+                else{
+                    container1.rotation.z = q1 + Math.PI/2;
+                }
+                container1.rotation.x = Math.atan(cube.position.z/cube.position.y);
+            }
+
+			//animation
+			animate();
+		</script>
+	</body>
+</html>
